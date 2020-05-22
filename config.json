@@ -1,0 +1,27 @@
+{
+    "name": "EAST",
+    "cuda": true,
+    "gpus": [
+        0
+    ],
+    "data_loader": {
+        "data_dir": "datasets/",
+        "input_size": 512,
+        "batch_size": 10,
+        "shuffle": true,
+        "workers": 4
+    },
+    "optimizer_type": "Adam",
+    "optimizer": {
+        "lr": 0.0001,
+        "weight_decay": 1e-5
+    },
+    "trainer": {
+        "epochs": 500,
+        "save_dir": "saved/",
+        "save_freq": 5,
+        "verbosity": 2,
+        "monitor": "hmean",
+        "monitor_mode": "max"
+    }
+}

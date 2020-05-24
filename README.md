@@ -76,16 +76,16 @@ Training the model by yourself
 ```
 python train.py
 ```
-Note: check to "config.json" for adjusting the training configuration.<br /><br />
+Note: check the "config.json" file, which is used to adjust the training configuration.<br /><br />
 
 Experiment on GEFORCE RTX 2070
 
 
-##Loss
+## Loss
 ![Loss](demo/loss.png)
 
 
-##Examples
+## Examples
 ![result-demo](demo/result-demo.png)
 ![result-demo-1](demo/result-demo-1.png)
 

@@ -4,7 +4,6 @@ import torch
 import argparse
 import numpy as np
 
-from utils.util import make_dir
 from eval import load_model
 from utils.util import resize_image
 from utils.util import detect
@@ -45,21 +44,12 @@ def demo(model, img_path, save_path, with_gpu):
                 cv2.polylines(im[:, :, ::-1], [box.astype(np.int32).reshape((-1, 1, 2))], True, color=(0, 255, 0),
                               thickness=2)
 
-        if save_path is not None:
-            print(img_path)
-            cv2.imwrite(os.path.join(save_path, 'result-{}'.format(img_path.split('/')[-1])), im[:, :, ::-1])
-
-        cv2.imshow('demo', im[:, :, ::-1])
-        cv2.waitKey(0)
-        cv2.destroyWindow('demo')
+        cv2.imwrite(os.path.join(save_path, 'result-{}'.format(img_path.split('/')[-1])), im[:, :, ::-1])
 
 
 def main(args: argparse.Namespace):
     with_gpu = True if torch.cuda.is_available() else False
-    save_path = None
-    if args.save:
-        save_path = "demo"
-        make_dir(save_path)
+    save_path = "demo"
     model_path = args.model
     img_path = args.image
     model = load_model(model_path, with_gpu)
@@ -70,6 +60,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Demo')
     parser.add_argument('-m', '--model', default=None, type=str, required=True, help='path to model')
     parser.add_argument('-i', '--image', default=None, type=str, required=True, help='input image')
-    parser.add_argument('-s', '--save', default=False, type=bool, help='flag save image')
     args = parser.parse_args()
     main(args)

@@ -171,7 +171,7 @@ def detect(score_map, geo_map, score_map_thresh=0.8, box_thresh=0.1, nms_thres=0
         mask = np.zeros_like(score_map, dtype=np.uint8)
         cv2.fillPoly(mask, box[:8].reshape((-1, 4, 2)).astype(np.int32) // 4, 1)
         boxes[i, 8] = cv2.mean(score_map, mask)[0]
-    boxes = boxes[boxes[:, 8] > box_thresh]
+    # boxes = boxes[boxes[:, 8] > box_thresh]
     return boxes
 
 

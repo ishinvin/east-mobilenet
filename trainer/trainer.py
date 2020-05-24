@@ -67,7 +67,7 @@ class Trainer(BaseTrainer):
                 raise
 
         # skip validation at the early stage
-        if epoch < 20:
+        if epoch < 10:
             print("skip validation...")
             metrics = {'precision': 0.0, 'recall': 0.0, 'hmean': 0.0, 'AP': 0}
         else:

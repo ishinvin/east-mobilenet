@@ -145,7 +145,6 @@ cython_debug/
 
 # This project
 datasets/
-runs/
 saved/
-demo/
 temp/
+outputs/

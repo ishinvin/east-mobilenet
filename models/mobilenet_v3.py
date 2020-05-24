@@ -184,16 +184,16 @@ class Ushape(nn.Module):
         self.bn4 = nn.BatchNorm2d(160)
         self.relu4 = nn.ReLU()
 
-        self.conv5 = nn.Conv2d(232, 128, 1)
-        self.bn5 = nn.BatchNorm2d(128)
+        self.conv5 = nn.Conv2d(232, 64, 1)
+        self.bn5 = nn.BatchNorm2d(64)
         self.relu5 = nn.ReLU()
-        self.conv6 = nn.Conv2d(128, 128, 3, padding=1)
-        self.bn6 = nn.BatchNorm2d(128)
+        self.conv6 = nn.Conv2d(64, 64, 3, padding=1)
+        self.bn6 = nn.BatchNorm2d(64)
         self.relu6 = nn.ReLU()
 
-        # self.conv7 = nn.Conv2d(32, 32, 3, padding=1)
-        # self.bn7 = nn.BatchNorm2d(32)
-        # self.relu7 = nn.ReLU()
+        self.conv7 = nn.Conv2d(64, 64, 3, padding=1)
+        self.bn7 = nn.BatchNorm2d(64)
+        self.relu7 = nn.ReLU()
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -220,9 +220,9 @@ class Ushape(nn.Module):
         y = F.interpolate(y, scale_factor=2, mode='bilinear', align_corners=True)  # 1 160 128 128
         y = torch.cat((y, x1), 1)  # 1 232 128 128
         y = self.relu5(self.bn5(self.conv5(y)))
-        y = self.relu6(self.bn6(self.conv6(y)))  # 1 128 128 128
+        y = self.relu6(self.bn6(self.conv6(y)))  # 1 64 128 128
 
-        # y = self.relu7(self.bn7(self.conv7(y)))
+        y = self.relu7(self.bn7(self.conv7(y)))
         return y
 
 
@@ -236,3 +236,10 @@ class MobileNetV3(nn.Module):
         x, x1, x2, x3 = self.extractor(x)
 
         return self.merge(x, x1, x2, x3)
+
+
+if __name__ == '__main__':
+    net = MobileNetV3()
+    x = torch.rand([4, 3, 512, 512])
+    y = net(x)
+    print(y.size())

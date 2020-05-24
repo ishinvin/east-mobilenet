@@ -65,9 +65,9 @@ class East(BaseModel):
     def __init__(self, config):
         super().__init__(config)
         self.backbone = MobileNetV3()
-        self.score_map = nn.Conv2d(128, 1, kernel_size=1)
-        self.geo_map = nn.Conv2d(128, 4, kernel_size=1)
-        self.angle_map = nn.Conv2d(128, 1, kernel_size=1)
+        self.score_map = nn.Conv2d(64, 1, kernel_size=1)
+        self.geo_map = nn.Conv2d(64, 4, kernel_size=1)
+        self.angle_map = nn.Conv2d(64, 1, kernel_size=1)
         self.scale = config['data_loader']['input_size']
 
     def forward(self, inputs):

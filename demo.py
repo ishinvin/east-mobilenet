@@ -14,7 +14,7 @@ from utils.util import sort_poly
 def demo(model, img_path, save_path, with_gpu):
     with torch.no_grad():
         im = cv2.imread(img_path)[:, :, ::-1]
-        im_resized, (ratio_h, ratio_w) = resize_image(im)
+        im_resized, (ratio_h, ratio_w) = resize_image(im, 512)
         im_resized = im_resized.astype(np.float32)
         im_resized = torch.from_numpy(im_resized)
         if with_gpu:
@@ -43,11 +43,11 @@ def demo(model, img_path, save_path, with_gpu):
                 if np.linalg.norm(box[0] - box[1]) < 5 or np.linalg.norm(box[3] - box[0]) < 5:
                     continue
                 cv2.polylines(im[:, :, ::-1], [box.astype(np.int32).reshape((-1, 1, 2))], True, color=(0, 255, 0),
-                              thickness=1)
+                              thickness=2)
 
         if save_path is not None:
             print(img_path)
-            cv2.imwrite(os.path.join(save_path, img_path.split('/')[-1]), im[:, :, ::-1])
+            cv2.imwrite(os.path.join(save_path, 'result-{}'.format(img_path.split('/')[-1])), im[:, :, ::-1])
 
         cv2.imshow('demo', im[:, :, ::-1])
         cv2.waitKey(0)

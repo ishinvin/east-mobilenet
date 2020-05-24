@@ -43,7 +43,7 @@ class ICDAR(Dataset):
                     x1, y1, x2, y2, x3, y3, x4, y4 = list(map(float, text[:8]))
                     bbox = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
                     delim, label = '', ''
-                    for i in range(8, len(text)):
+                    for i in range(9, len(text)):
                         label += delim + text[i]
                         delim = ','
                     texts.append(label.strip())

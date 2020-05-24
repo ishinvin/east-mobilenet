@@ -69,7 +69,14 @@ def main_evaluate(model, input_dir, output_dir, with_gpu, with_image=False):
             traceback.print_exc()
             print(image_fn)
 
-    return evaluate(output_dir)
+    results = {'precision': 0.0, 'recall': 0.0, 'hmean': 0.0, 'AP': 0}
+
+    try:
+        results = evaluate(output_dir)
+    except Exception as e:
+        traceback.print_exc()
+
+    return results
 
 
 def main(args: argparse.Namespace):

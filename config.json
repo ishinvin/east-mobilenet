@@ -17,7 +17,7 @@
         "weight_decay": 1e-5
     },
     "trainer": {
-        "epochs": 500,
+        "epochs": 100,
         "save_dir": "saved/",
         "save_freq": 5,
         "verbosity": 2,

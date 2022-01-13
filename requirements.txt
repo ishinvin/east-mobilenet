@@ -12,7 +12,7 @@ Markdown==3.2.2
 numpy==1.18.4
 oauthlib==3.1.0
 opencv-python==4.2.0.34
-Pillow==7.1.2
+Pillow==9.0.0
 Polygon3==3.0.8
 protobuf==3.12.1
 pyasn1==0.4.8

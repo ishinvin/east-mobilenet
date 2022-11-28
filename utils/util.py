@@ -2,6 +2,7 @@ import os
 import cv2
 import torch
 import numpy as np
+import json
 
 from utils.nms import nms_locality
 
@@ -220,3 +221,81 @@ def predict(im_fn, model, with_img=False, output_dir=None, with_gpu=False):
     if with_img:
         img_path = os.path.join(output_dir, 'img', im_fn.name)
         cv2.imwrite(img_path, im[:, :, ::-1])
+
+
+#ADDED CUSTOM METHODS
+def min_max_points(box):
+    np_box = np.array(box)
+    x_min_point = int(np.amin(np_box[:, 0]))
+    y_min_point = int(np.amin(np_box[:, 1]))
+
+    x_max_point = int(np.amax(np_box[:, 0]))
+    y_max_point = int(np.amax(np_box[:, 1]))
+
+    return np.array([[x_min_point, y_min_point], [x_max_point, y_max_point]])
+
+def init_leaf():
+    leaf = {
+        "value" : None,
+        "left" : None,
+        "right" : None
+    }
+    return leaf
+
+def add_box_leaf(tree, value):
+    if tree["value"] is None:
+        tree["value"] = value
+
+    elif value[0][0] < tree["value"][0][0]:
+        if tree["left"] is None:
+            tree["left"] = init_leaf()
+
+        add_box_leaf(tree["left"], value)
+
+    elif value[0][0] > tree["value"][0][0]:
+        if tree["right"] is None:
+            tree["right"] = init_leaf()
+
+        add_box_leaf(tree["right"], value)
+
+    else:
+        if value[0][1] < tree["value"][0][1]:
+            if tree["left"] is None:
+                tree["left"] = init_leaf()
+
+            add_box_leaf(tree["left"], value)
+
+        elif value[0][1] >= tree["value"][0][1]:
+            if tree["right"] is None:
+                tree["right"] = init_leaf()
+
+            add_box_leaf(tree["right"], value)
+        
+
+def flatten_tree(tree, list):
+    if tree["left"] is None:
+        list.append(tree["value"])
+        if tree["right"] is not None:
+            flatten_tree(tree["right"], list)
+
+    else:
+        flatten_tree(tree["left"], list)
+        list.append(tree["value"])
+        if tree["right"] is not None:
+            flatten_tree(tree["right"], list)
+
+
+def binary_sort(list):
+    tree_4dim = init_leaf()
+    ordered_points = []
+    for point in list:
+        add_box_leaf(tree_4dim, point)
+
+    flatten_tree(tree_4dim, ordered_points)
+    return np.array(ordered_points), tree_4dim
+
+def get_targets():
+    f = open("alphaNet/1/letterMapping.json")
+    mappings = json.load(f)
+    f.close()
+    return mappings['labels']

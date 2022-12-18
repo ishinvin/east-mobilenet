@@ -3,8 +3,10 @@ import cv2
 import torch
 import numpy as np
 import json
+import math
 
 from utils.nms import nms_locality
+from english_words import english_words_lower_alpha_set
 
 
 def make_dir(path):
@@ -224,13 +226,20 @@ def predict(im_fn, model, with_img=False, output_dir=None, with_gpu=False):
 
 
 #ADDED CUSTOM METHODS
-def min_max_points(box):
+def min_max_points(box, y_max=10000, x_max=10000):
     np_box = np.array(box)
-    x_min_point = int(np.amin(np_box[:, 0]))
-    y_min_point = int(np.amin(np_box[:, 1]))
 
-    x_max_point = int(np.amax(np_box[:, 0]))
-    y_max_point = int(np.amax(np_box[:, 1]))
+    avg_x_min = max(0,int((np_box[0][0] + np_box[3][0]) / 2))
+    avg_y_min = max(0,int((np_box[0][1] + np_box[1][1]) / 2))
+
+    avg_x_max = min(x_max,int((np_box[1][0] + np_box[2][0]) / 2))
+    avg_y_max = min(y_max,int((np_box[2][1] + np_box[3][1]) / 2))
+
+    x_min_point = max(0, int(np.amin(np_box[:, 0])))
+    y_min_point = max(0, int(np.amin(np_box[:, 1])))
+
+    x_max_point = min(x_max, int(np.amax(np_box[:, 0])))
+    y_max_point = min(y_max, int(np.amax(np_box[:, 1])))
 
     return np.array([[x_min_point, y_min_point], [x_max_point, y_max_point]])
 
@@ -242,35 +251,47 @@ def init_leaf():
     }
     return leaf
 
-def add_box_leaf(tree, value):
+def add_box_leaf(tree, value, word=0, letter=1):
     if tree["value"] is None:
         tree["value"] = value
 
-    elif value[0][0] < tree["value"][0][0]:
+    elif value[0][word] < tree["value"][0][word]:
         if tree["left"] is None:
             tree["left"] = init_leaf()
 
-        add_box_leaf(tree["left"], value)
+        add_box_leaf(tree["left"], value, word, letter)
 
-    elif value[0][0] > tree["value"][0][0]:
+    elif value[0][word] > tree["value"][0][word]:
         if tree["right"] is None:
             tree["right"] = init_leaf()
 
-        add_box_leaf(tree["right"], value)
+        add_box_leaf(tree["right"], value, word, letter)
 
     else:
-        if value[0][1] < tree["value"][0][1]:
+        if value[0][letter] < tree["value"][0][letter]:
             if tree["left"] is None:
                 tree["left"] = init_leaf()
 
-            add_box_leaf(tree["left"], value)
+            add_box_leaf(tree["left"], value, word, letter)
 
-        elif value[0][1] >= tree["value"][0][1]:
+        elif value[0][letter] >= tree["value"][0][letter]:
             if tree["right"] is None:
                 tree["right"] = init_leaf()
 
-            add_box_leaf(tree["right"], value)
+            add_box_leaf(tree["right"], value, word, letter)
         
+
+def reshape_tree(tree):
+    if tree["left"] is None:
+        tree["value"] = np.array(tree["value"]).flatten().tolist()
+        if tree["right"] is not None:
+            reshape_tree(tree["right"])
+
+    else:
+        reshape_tree(tree["left"])
+        tree["value"] = np.array(tree["value"]).flatten().tolist()
+        if tree["right"] is not None:
+            reshape_tree(tree["right"])
 
 def flatten_tree(tree, list):
     if tree["left"] is None:
@@ -285,13 +306,14 @@ def flatten_tree(tree, list):
             flatten_tree(tree["right"], list)
 
 
-def binary_sort(list):
+def binary_sort(list, word=0, letter=1):
     tree_4dim = init_leaf()
     ordered_points = []
     for point in list:
-        add_box_leaf(tree_4dim, point)
+        add_box_leaf(tree_4dim, point, word, letter)
 
     flatten_tree(tree_4dim, ordered_points)
+    
     return np.array(ordered_points), tree_4dim
 
 def get_targets():
@@ -299,3 +321,83 @@ def get_targets():
     mappings = json.load(f)
     f.close()
     return mappings['labels']
+
+
+def boxes_stats(boxes):
+    areas = np.array([box[1][0]*box[1][1] for box in boxes])
+    average = sum(areas) / len(areas)
+    deviations = np.square(areas - average)
+    variance = sum(deviations) / len(deviations)
+    standard_deviation = math.sqrt(variance)
+    
+    return areas, average, deviations, standard_deviation
+
+def merge_y_axis_boxes(boxes):
+    merged = []
+    merge = False
+    i = 0
+    temp_box = boxes[i]
+    for j in range(1, len(boxes)):
+        if i < len(boxes) - 1:
+            if merge == False:
+                temp_box = boxes[i]
+        
+            else:
+                temp_box = merged[-1]
+
+            if x_intersection(temp_box, boxes[j]) < 0.6:
+                if merge == False:
+                    merged.append(temp_box)
+                    if j == len(boxes) - 1:
+                        merged.append(boxes[j])
+                        break
+            
+                else:
+                    i += 1
+                    merge = False
+        
+            else:
+                merged_boxes = merge_boxes(temp_box, boxes[j])
+                merged.append(merged_boxes)
+                merge = True
+                i -= 1
+
+            i += 1
+        
+        else :
+            break
+
+    return merged
+
+
+def x_intersection(box1, box2):
+    intersect = (min(box1[0][0] + box1[1][0], box2[0][0] + box2[1][0]) - max(box1[0][0], box2[0][0])) / max(box1[1][0], box2[1][0])
+    
+    return intersect
+
+def merge_boxes(box1, box2):
+    x_min_point = min(box1[0][0], box2[0][0])
+    y_min_point = min(box1[0][1], box2[0][1])
+
+    x_max_point = max(box1[0][0] + box1[1][0], box2[0][0] + box2[1][0])
+    y_max_point = max(box1[0][1] + box1[1][1], box2[0][1] + box2[1][1])
+
+    return [[x_min_point, y_min_point], [x_max_point - x_min_point, y_max_point - y_min_point]]
+
+def create_prompt(words):
+    return """Return only the words I pass to you corrected and only one suggestion.
+            The words to correct are: {}
+            """.format(words)
+
+def check_dictionary(word):
+    return word in english_words_lower_alpha_set
+
+def dictionary(lim=10):
+    print("dictionary size ", len(english_words_lower_alpha_set))
+    i = 0
+    for word in english_words_lower_alpha_set:
+        if i == lim:
+            break
+
+        print(word)
+        i += 1
